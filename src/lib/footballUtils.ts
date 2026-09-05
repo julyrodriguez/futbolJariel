@@ -10,10 +10,12 @@ export interface TeamRef {
   logoUrl?: string;
   score?: number;
   id?: number;
+  _id?: number;
 }
 
 export interface Match {
   id: number;
+  _id?: number;
   homeTeam?: TeamRef;
   awayTeam?: TeamRef;
   home_team?: TeamRef;
@@ -191,13 +193,13 @@ export const getTeamName = (match: Match, team: 'home' | 'away'): string => {
 export const getTeamId = (match: Match, team: 'home' | 'away'): number | undefined => {
   const teamObj = team === 'home' ? match.homeTeam : match.awayTeam;
   const altTeamObj = team === 'home' ? match.home_team : match.away_team;
-  return teamObj?.id || altTeamObj?.id;
+  return teamObj?.id || altTeamObj?.id || (teamObj as any)?._id || (altTeamObj as any)?._id;
 };
 
 export const getTeamLogo = (match: Match, team: 'home' | 'away'): string => {
   const teamObj = team === 'home' ? match.homeTeam : match.awayTeam;
   const altTeamObj = team === 'home' ? match.home_team : match.away_team;
-  const teamId = teamObj?.id || altTeamObj?.id;
+  const teamId = teamObj?.id || altTeamObj?.id || (teamObj as any)?._id || (altTeamObj as any)?._id;
   if (teamId) return `/escudos/${teamId}.png`;
   const logoUrl = teamObj?.logoUrl || altTeamObj?.logoUrl || null;
   if (logoUrl?.startsWith('/')) return `https://apivacas.jariel.com.ar/api${logoUrl}`;
@@ -206,7 +208,7 @@ export const getTeamLogo = (match: Match, team: 'home' | 'away'): string => {
 
 export const sanitizeMatch = (m: any): any => {
   if (!m) return m;
-  const matchId = m.id || m._id;
+  const matchId = m.id || m._id || m.matchId || m.match_id;
   const homeName = (m.homeTeam?.name || m.home_team?.name || '').toLowerCase();
   const awayName = (m.awayTeam?.name || m.away_team?.name || '').toLowerCase();
   const isTercerPuesto = 
@@ -214,14 +216,12 @@ export const sanitizeMatch = (m: any): any => {
     ((homeName.includes('france') || homeName.includes('francia')) && 
      (awayName.includes('england') || awayName.includes('inglaterra')));
   
-  if (isTercerPuesto) {
-    return {
-      ...m,
-      round_name: 'Tercer puesto',
-      stage: 'Tercer puesto'
-    };
-  }
-  return m;
+  return {
+    ...m,
+    id: matchId,
+    _id: matchId,
+    ...(isTercerPuesto ? { round_name: 'Tercer puesto', stage: 'Tercer puesto' } : {})
+  };
 };
 
 export const getLeagueFormat = (id: string): 'argentina' | 'european' | 'brazil' | 'mls' | 'cup' | 'international' => {

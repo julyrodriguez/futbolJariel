@@ -12,7 +12,7 @@ import {
   sortRounds 
 } from '../lib/footballUtils';
 import { LEAGUES, LeagueId } from '../lib/leagues';
-import { Trophy, Radio, BarChart2, Calendar, AlertCircle, RefreshCw } from 'lucide-react';
+import { Trophy, BarChart2, AlertCircle, RefreshCw } from 'lucide-react';
 
 interface MatchesHubProps {
   leagueId?: string; // default 'general'
@@ -35,8 +35,7 @@ export default function MatchesHub({ leagueId = 'general' }: MatchesHubProps) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  // League specific: view mode & round
-  const [viewMode, setViewMode] = useState<'round' | 'date'>('round');
+  // League specific: round
   const [selectedRound, setSelectedRound] = useState<string>('');
   const [allLeagueMatches, setAllLeagueMatches] = useState<Match[]>([]);
 
@@ -67,7 +66,6 @@ export default function MatchesHub({ leagueId = 'general' }: MatchesHubProps) {
         const rounds = Array.from(new Set(sanitized.map((m: any) => m.round_name).filter(Boolean))) as string[];
         const sorted = sortRounds(rounds);
         if (sorted.length > 0) {
-          // Find first round that has not started or has live matches
           const currentRound = sorted.find(r => 
             sanitized.some((m: any) => m.round_name === r && !parseMatchStatus(m).isFinished)
           ) || sorted[sorted.length - 1];
@@ -104,15 +102,10 @@ export default function MatchesHub({ leagueId = 'general' }: MatchesHubProps) {
     if (isGeneral) {
       list = matches;
     } else {
-      if (viewMode === 'round' && selectedRound) {
+      if (selectedRound) {
         list = allLeagueMatches.filter((m: any) => m.round_name === selectedRound);
       } else {
-        // Filter by selected date
-        list = allLeagueMatches.filter((m: any) => {
-          if (!m.startTimestamp) return false;
-          const matchDate = new Date(m.startTimestamp * 1000).toISOString().split('T')[0];
-          return matchDate === selectedDate;
-        });
+        list = allLeagueMatches;
       }
     }
 
@@ -121,7 +114,7 @@ export default function MatchesHub({ leagueId = 'general' }: MatchesHubProps) {
     }
 
     return list;
-  }, [isGeneral, matches, allLeagueMatches, viewMode, selectedRound, selectedDate, showLiveOnly]);
+  }, [isGeneral, matches, allLeagueMatches, selectedRound, showLiveOnly]);
 
   // Count Live matches
   const liveCount = useMemo(() => {
@@ -147,35 +140,33 @@ export default function MatchesHub({ leagueId = 'general' }: MatchesHubProps) {
   }, [isGeneral, currentList]);
 
   return (
-    <div className="space-y-5 pb-16">
+    <div className="space-y-4 pb-16">
       
       {/* 1. Quick League Carousel Bar */}
       <LeagueBar currentLeagueId={leagueId} basePath="partidos" />
 
       {/* 2. League Subheader & Tab Switcher (if on a specific league) */}
       {!isGeneral && (
-        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 bg-[#101726]/60 p-4 rounded-3xl border border-white/5">
-          <div className="flex items-center gap-3">
-            <span className="text-3xl">{activeLeague.icon}</span>
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 bg-[#101726]/60 px-4 py-3 rounded-2xl border border-white/5">
+          <div className="flex items-center gap-2.5">
+            <span className="text-2xl">{activeLeague.icon}</span>
             <div>
-              <h1 className="text-xl sm:text-2xl font-black text-white tracking-tight">
+              <h1 className="text-base sm:text-lg font-black text-white tracking-tight">
                 {activeLeague.name}
               </h1>
-              <p className="text-xs text-slate-400">
+              <p className="text-[11px] text-slate-400">
                 Resultados y fixture oficial
               </p>
             </div>
           </div>
 
-          <div className="flex items-center gap-2">
-            <Link
-              href={`/liga/${leagueId}/tabla`}
-              className="flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-bold bg-white/5 hover:bg-white/10 text-slate-200 hover:text-white border border-white/10 transition-colors"
-            >
-              <BarChart2 className="w-3.5 h-3.5 text-sky-400" />
-              Ver Tabla de Posiciones
-            </Link>
-          </div>
+          <Link
+            href={`/liga/${leagueId}/tabla`}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold bg-white/5 hover:bg-white/10 text-slate-200 hover:text-white border border-white/10 transition-colors"
+          >
+            <BarChart2 className="w-3.5 h-3.5 text-sky-400" />
+            Ver Tabla de Posiciones
+          </Link>
         </div>
       )}
 
@@ -189,15 +180,15 @@ export default function MatchesHub({ leagueId = 'general' }: MatchesHubProps) {
           liveCount={liveCount}
         />
       ) : (
-        <div className="flex flex-wrap items-center justify-between gap-3 bg-[#101726]/60 p-3 rounded-2xl border border-white/5">
+        <div className="flex flex-wrap items-center justify-between gap-2.5 bg-[#101726]/60 px-3.5 py-2.5 rounded-2xl border border-white/5">
           
           {/* Round Selector Dropdown */}
           <div className="flex items-center gap-2">
-            <span className="text-xs font-bold text-slate-400">Jornada / Fecha:</span>
+            <span className="text-xs font-bold text-slate-400">Fecha / Jornada:</span>
             <select
               value={selectedRound}
               onChange={(e) => setSelectedRound(e.target.value)}
-              className="bg-black/50 border border-white/15 rounded-xl px-3 py-1.5 text-xs text-white font-bold outline-none cursor-pointer hover:border-sky-400 transition-colors"
+              className="bg-black/50 border border-white/15 rounded-xl px-2.5 py-1 text-xs text-white font-bold outline-none cursor-pointer hover:border-sky-400 transition-colors"
             >
               {availableRounds.map(r => (
                 <option key={r} value={r} className="bg-[#101726] text-white">
@@ -210,7 +201,7 @@ export default function MatchesHub({ leagueId = 'general' }: MatchesHubProps) {
           {/* Live Filter Toggle */}
           <button
             onClick={() => setShowLiveOnly(!showLiveOnly)}
-            className={`flex items-center gap-2 px-3 py-1.5 rounded-xl text-xs font-extrabold border transition-all cursor-pointer ${
+            className={`flex items-center gap-2 px-3 py-1 rounded-xl text-xs font-extrabold border transition-all cursor-pointer ${
               showLiveOnly
                 ? 'bg-red-500 text-white border-red-400 shadow-md shadow-red-500/30'
                 : 'bg-white/5 text-slate-300 border-white/5 hover:border-white/20 hover:text-white'
@@ -229,26 +220,26 @@ export default function MatchesHub({ leagueId = 'general' }: MatchesHubProps) {
 
       {/* 4. Match List or Loading States */}
       {loading && currentList.length === 0 ? (
-        <div className="py-20 flex flex-col items-center justify-center gap-3">
-          <div className="w-10 h-10 border-3 border-sky-400 border-t-transparent rounded-full animate-spin" />
-          <span className="text-xs text-slate-400 font-semibold">Cargando resultados...</span>
+        <div className="py-16 flex flex-col items-center justify-center gap-2.5">
+          <div className="w-8 h-8 border-2 border-sky-400 border-t-transparent rounded-full animate-spin" />
+          <span className="text-xs text-slate-400 font-semibold">Cargando partidos...</span>
         </div>
       ) : error ? (
-        <div className="p-8 rounded-3xl bg-[#101726]/50 border border-white/5 text-center">
-          <AlertCircle className="w-10 h-10 text-rose-500 mx-auto mb-3" />
+        <div className="p-6 rounded-2xl bg-[#101726]/50 border border-white/5 text-center">
+          <AlertCircle className="w-8 h-8 text-rose-500 mx-auto mb-2" />
           <h3 className="text-sm font-bold text-white mb-1">No se pudieron cargar los partidos</h3>
-          <p className="text-xs text-slate-400 mb-4">{error}</p>
+          <p className="text-xs text-slate-400 mb-3">{error}</p>
           <button
             onClick={fetchMatches}
-            className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-white/10 hover:bg-white/20 text-xs font-bold text-white transition-colors"
+            className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-white/10 hover:bg-white/20 text-xs font-bold text-white transition-colors cursor-pointer"
           >
-            <RefreshCw className="w-3.5 h-3.5" /> Reintentar
+            <RefreshCw className="w-3 h-3" /> Reintentar
           </button>
         </div>
       ) : currentList.length === 0 ? (
-        <div className="p-12 rounded-3xl bg-[#101726]/40 border border-white/5 text-center space-y-2">
-          <div className="text-3xl mb-2">⚽</div>
-          <h3 className="text-base font-bold text-white">
+        <div className="p-10 rounded-2xl bg-[#101726]/40 border border-white/5 text-center space-y-2">
+          <div className="text-2xl mb-1">⚽</div>
+          <h3 className="text-sm font-bold text-white">
             {showLiveOnly ? 'No hay partidos en vivo en este momento' : 'No hay partidos programados'}
           </h3>
           <p className="text-xs text-slate-400 max-w-sm mx-auto">
@@ -259,36 +250,36 @@ export default function MatchesHub({ leagueId = 'general' }: MatchesHubProps) {
           {showLiveOnly && (
             <button
               onClick={() => setShowLiveOnly(false)}
-              className="mt-3 px-4 py-2 rounded-xl bg-sky-500 hover:bg-sky-400 text-xs font-bold text-white transition-colors cursor-pointer"
+              className="mt-2 px-3.5 py-1.5 rounded-xl bg-sky-500 hover:bg-sky-400 text-xs font-bold text-white transition-colors cursor-pointer"
             >
               Ver todos los partidos
             </button>
           )}
         </div>
       ) : isGeneral && groupedByTournament ? (
-        /* Grouped by tournament for General View */
-        <div className="space-y-6">
+        /* Grouped by tournament for General View - Compact Cards Grid */
+        <div className="space-y-5">
           {groupedByTournament.map((group, gIdx) => (
-            <div key={gIdx} className="space-y-3">
+            <div key={gIdx} className="space-y-2">
               <div className="flex items-center gap-2 px-1 text-xs font-bold text-slate-300">
-                <Trophy className="w-4 h-4 text-amber-400" />
-                <span className="text-white text-sm font-black">{group.name}</span>
-                <span className="text-slate-500 text-[11px] font-semibold">({group.matches.length})</span>
+                <Trophy className="w-3.5 h-3.5 text-amber-400" />
+                <span className="text-white text-xs sm:text-sm font-black">{group.name}</span>
+                <span className="text-slate-500 text-[10px] font-semibold">({group.matches.length})</span>
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2.5">
                 {group.matches.map((m) => (
-                  <MatchCard key={m.id} match={m} />
+                  <MatchCard key={m.id || (m as any)._id} match={m} />
                 ))}
               </div>
             </div>
           ))}
         </div>
       ) : (
-        /* Flat Grid for Specific League / Round */
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+        /* Flat Grid for Specific League / Round - Compact Cards Grid */
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2.5">
           {currentList.map((m) => (
-            <MatchCard key={m.id} match={m} />
+            <MatchCard key={m.id || (m as any)._id} match={m} />
           ))}
         </div>
       )}

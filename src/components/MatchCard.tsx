@@ -1,7 +1,6 @@
 'use client';
 
 import { useState } from 'react';
-import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import TeamLogo from './TeamLogo';
 import { 
@@ -13,7 +12,7 @@ import {
   getTeamLogo, 
   getTeamId 
 } from '../lib/footballUtils';
-import { ChevronDown, ChevronRight, Activity, Trophy } from 'lucide-react';
+import { ChevronDown, Trophy } from 'lucide-react';
 
 interface MatchCardProps {
   match: Match;
@@ -26,6 +25,7 @@ export default function MatchCard({ match, showTournamentHeader = false }: Match
   const [goalsLoading, setGoalsLoading] = useState(false);
   const [goals, setGoals] = useState<any[] | null>(null);
 
+  const matchId = match.id || match._id || (match as any).matchId;
   const status = parseMatchStatus(match);
   const hName = getTeamName(match, 'home');
   const aName = getTeamName(match, 'away');
@@ -33,8 +33,6 @@ export default function MatchCard({ match, showTournamentHeader = false }: Match
   const aLogo = getTeamLogo(match, 'away');
   const hScore = getScore(match, 'home');
   const aScore = getScore(match, 'away');
-  const hId = getTeamId(match, 'home');
-  const aId = getTeamId(match, 'away');
   const liveTime = status.isLive ? getMatchTime(match) : null;
 
   const loadGoals = (e: React.MouseEvent) => {
@@ -46,7 +44,7 @@ export default function MatchCard({ match, showTournamentHeader = false }: Match
     }
     setGoalsLoading(true);
     setGoalsOpen(true);
-    fetch(`https://apivacas.jariel.com.ar/api/matches/detail/${match.id}`)
+    fetch(`https://apivacas.jariel.com.ar/api/matches/detail/${matchId}`)
       .then(res => res.json())
       .then(d => {
         const incidents = d.incidents || (d.events?.[0]?.incidents) || [];
@@ -63,69 +61,64 @@ export default function MatchCard({ match, showTournamentHeader = false }: Match
 
   return (
     <div 
-      onClick={() => router.push(`/match/${match.id}`)}
-      className={`group relative bg-[#101726]/70 hover:bg-[#131d31] border rounded-2xl transition-all duration-200 cursor-pointer overflow-hidden shadow-sm hover:shadow-xl hover:shadow-sky-500/5 ${
+      onClick={() => {
+        if (matchId) router.push(`/match/${matchId}`);
+      }}
+      className={`group relative bg-[#101726]/80 hover:bg-[#141e33] border rounded-xl transition-all duration-150 cursor-pointer overflow-hidden shadow-sm hover:shadow-md hover:border-sky-500/30 ${
         status.isLive 
-          ? 'border-red-500/30 bg-gradient-to-r from-red-500/[0.04] via-transparent to-transparent' 
-          : 'border-white/[0.06] hover:border-white/15'
+          ? 'border-red-500/40 bg-gradient-to-r from-red-500/[0.06] via-[#101726]/80 to-transparent' 
+          : 'border-white/[0.07] hover:border-white/20'
       }`}
     >
-      {/* Optional Tournament Sub-header if needed */}
+      {/* Optional Tournament Sub-header if requested */}
       {showTournamentHeader && (
-        <div className="flex items-center justify-between px-4 py-2 border-b border-white/5 bg-black/20 text-[11px] font-bold text-slate-400">
-          <div className="flex items-center gap-2">
-            <Trophy className="w-3.5 h-3.5 text-amber-400" />
-            <span className="text-slate-200">{match.tournament_name || match.tournament?.name || 'Fútbol'}</span>
+        <div className="flex items-center justify-between px-3 py-1 border-b border-white/5 bg-black/20 text-[10px] font-bold text-slate-400">
+          <div className="flex items-center gap-1.5 truncate">
+            <Trophy className="w-3 h-3 text-amber-400 shrink-0" />
+            <span className="text-slate-300 truncate">{match.tournament_name || match.tournament?.name || 'Fútbol'}</span>
           </div>
           {match.round_name && (
-            <span className="text-slate-400 font-semibold">{match.round_name}</span>
+            <span className="text-slate-400 font-medium shrink-0">{match.round_name}</span>
           )}
         </div>
       )}
 
-      {/* Main Stadium Layout */}
-      <div className="p-4 sm:p-5">
-        <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-3 sm:gap-6">
+      {/* Main Stadium Layout - Compact & Crisp */}
+      <div className="px-3.5 py-2.5 sm:py-3">
+        <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-2 sm:gap-3">
           
           {/* Home Team */}
-          <div className="flex items-center justify-end gap-3 text-right min-w-0">
-            <div className="flex flex-col items-end min-w-0">
-              <span className="text-sm sm:text-base font-bold text-slate-100 group-hover:text-sky-300 transition-colors truncate max-w-[130px] sm:max-w-[200px]">
-                {hName}
-              </span>
-              {match.round_name && !showTournamentHeader && (
-                <span className="text-[10px] text-slate-400 truncate hidden sm:block">
-                  {match.round_name}
-                </span>
-              )}
-            </div>
-            <TeamLogo logoUrl={hLogo} teamName={hName} className="w-8 h-8 sm:w-10 sm:h-10 shrink-0" />
+          <div className="flex items-center justify-end gap-2 text-right min-w-0">
+            <span className="text-xs sm:text-[13px] font-bold text-slate-100 group-hover:text-sky-300 transition-colors truncate max-w-[110px] sm:max-w-[150px]">
+              {hName}
+            </span>
+            <TeamLogo logoUrl={hLogo} teamName={hName} className="w-6 h-6 sm:w-7 sm:h-7 shrink-0" />
           </div>
 
-          {/* Central Scoreboard / Timing Pill */}
-          <div className="flex flex-col items-center justify-center min-w-[80px] sm:min-w-[110px] shrink-0">
+          {/* Central Scoreboard / Status */}
+          <div className="flex flex-col items-center justify-center min-w-[70px] sm:min-w-[85px] shrink-0">
             {status.isLive ? (
               <div className="flex flex-col items-center">
-                <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-red-500/20 text-red-400 border border-red-500/40 mb-1 animate-pulse">
+                <span className="inline-flex items-center gap-1 px-1.5 py-0.2 rounded-full text-[9px] font-black uppercase tracking-wider bg-red-500/20 text-red-400 border border-red-500/40 mb-0.5 animate-pulse">
                   <span className="w-1.5 h-1.5 rounded-full bg-red-500" />
                   {liveTime || 'VIVO'}
                 </span>
-                <div className="flex items-center gap-2 text-xl sm:text-2xl font-black text-red-400 tracking-tight">
+                <div className="flex items-center gap-1.5 text-base sm:text-lg font-black text-red-400 tracking-tight leading-none">
                   <span>{hScore ?? 0}</span>
-                  <span className="text-slate-600 font-normal text-sm">-</span>
+                  <span className="text-slate-600 font-light text-xs">-</span>
                   <span>{aScore ?? 0}</span>
                 </div>
               </div>
             ) : status.hasStarted ? (
               <div className="flex flex-col items-center">
-                <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1">
+                <span className="text-[9px] font-semibold uppercase tracking-wider text-slate-400 mb-0.5">
                   {status.isPenalties ? 'Penales' : 'Final'}
                 </span>
-                <div className="flex items-center gap-2 text-xl sm:text-2xl font-black text-white tracking-tight">
+                <div className="flex items-center gap-1.5 text-base sm:text-lg font-black text-white tracking-tight leading-none">
                   <span className={hScore !== null && aScore !== null && hScore > aScore ? 'text-sky-400' : 'text-slate-100'}>
                     {hScore ?? 0}
                   </span>
-                  <span className="text-slate-600 font-normal text-sm">-</span>
+                  <span className="text-slate-600 font-light text-xs">-</span>
                   <span className={hScore !== null && aScore !== null && aScore > hScore ? 'text-sky-400' : 'text-slate-100'}>
                     {aScore ?? 0}
                   </span>
@@ -133,10 +126,7 @@ export default function MatchCard({ match, showTournamentHeader = false }: Match
               </div>
             ) : (
               <div className="flex flex-col items-center">
-                <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1">
-                  {status.label}
-                </span>
-                <div className="px-3 py-1 rounded-xl bg-white/5 border border-white/10 text-xs sm:text-sm font-bold text-slate-200">
+                <div className="px-2 py-0.5 rounded-lg bg-white/5 border border-white/10 text-[11px] font-bold text-slate-200">
                   {startTimeStr || 'Pendiente'}
                 </div>
               </div>
@@ -144,74 +134,62 @@ export default function MatchCard({ match, showTournamentHeader = false }: Match
           </div>
 
           {/* Away Team */}
-          <div className="flex items-center justify-start gap-3 text-left min-w-0">
-            <TeamLogo logoUrl={aLogo} teamName={aName} className="w-8 h-8 sm:w-10 sm:h-10 shrink-0" />
-            <div className="flex flex-col items-start min-w-0">
-              <span className="text-sm sm:text-base font-bold text-slate-100 group-hover:text-sky-300 transition-colors truncate max-w-[130px] sm:max-w-[200px]">
-                {aName}
-              </span>
-              <span className="text-[10px] text-slate-400 truncate hidden sm:block">
-                Visitante
-              </span>
-            </div>
+          <div className="flex items-center justify-start gap-2 text-left min-w-0">
+            <TeamLogo logoUrl={aLogo} teamName={aName} className="w-6 h-6 sm:w-7 sm:h-7 shrink-0" />
+            <span className="text-xs sm:text-[13px] font-bold text-slate-100 group-hover:text-sky-300 transition-colors truncate max-w-[110px] sm:max-w-[150px]">
+              {aName}
+            </span>
           </div>
 
         </div>
 
-        {/* Quick Footer Action: Link to Detail & H2H */}
-        <div className="mt-3 pt-3 border-t border-white/[0.04] flex items-center justify-between text-xs text-slate-400">
-          <div className="flex items-center gap-2">
-            {status.hasStarted && (
-              <button
-                onClick={loadGoals}
-                className="flex items-center gap-1 text-[11px] font-semibold text-slate-400 hover:text-white px-2 py-0.5 rounded-lg hover:bg-white/5 transition-colors cursor-pointer"
-              >
-                <span>{goalsOpen ? 'Ocultar goles' : 'Goles'}</span>
-                <ChevronDown className={`w-3 h-3 transition-transform ${goalsOpen ? 'rotate-180' : ''}`} />
-              </button>
-            )}
+        {/* Mini Footer: Quick info & subtle goals button if finished/live */}
+        {status.hasStarted && (
+          <div className="mt-1.5 pt-1.5 border-t border-white/[0.03] flex items-center justify-between text-[10px] text-slate-500">
+            <button
+              onClick={loadGoals}
+              className="flex items-center gap-1 font-semibold text-slate-400 hover:text-slate-200 transition-colors cursor-pointer"
+            >
+              <span>{goalsOpen ? 'Ocultar goles' : 'Goles'}</span>
+              <ChevronDown className={`w-2.5 h-2.5 transition-transform ${goalsOpen ? 'rotate-180' : ''}`} />
+            </button>
+            <span className="text-slate-500 group-hover:text-sky-400 transition-colors">
+              Detalles & H2H →
+            </span>
           </div>
-
-          <div className="flex items-center gap-1 text-[11px] font-bold text-sky-400 group-hover:text-sky-300 transition-colors">
-            <span>Ver Historial H2H & Estadísticas</span>
-            <ChevronRight className="w-3.5 h-3.5 group-hover:translate-x-0.5 transition-transform" />
-          </div>
-        </div>
+        )}
       </div>
 
-      {/* Expanded Goals View */}
+      {/* Collapsed goals drawer */}
       {goalsOpen && (
-        <div className="px-5 py-3 border-t border-white/5 bg-[#080d16]/80 animate-in fade-in-0 duration-150">
+        <div className="px-3 py-2 border-t border-white/5 bg-[#080d16]/90 text-[11px] animate-in fade-in-0 duration-150">
           {goalsLoading ? (
-            <div className="flex items-center justify-center py-2 text-slate-400 text-xs gap-2">
-              <div className="animate-spin w-3.5 h-3.5 border-2 border-sky-400 border-t-transparent rounded-full" />
+            <div className="flex items-center justify-center py-1 text-slate-400 gap-1.5">
+              <div className="animate-spin w-3 h-3 border-2 border-sky-400 border-t-transparent rounded-full" />
               <span>Cargando goles...</span>
             </div>
           ) : goals && goals.length > 0 ? (
-            <div className="space-y-1.5">
+            <div className="space-y-1">
               {goals.map((goal, idx) => {
                 const isHome = goal.isHome === true;
                 const name = goal.playerName || goal.player?.shortName || goal.player?.name || 'Gol';
                 const timeStr = goal.addedTime ? `${goal.time}+${goal.addedTime}'` : `${goal.time}'`;
 
                 return (
-                  <div key={idx} className={`flex items-center gap-2 text-xs ${isHome ? 'justify-start' : 'justify-end'}`}>
-                    <span className="text-slate-400 font-mono text-[10px] bg-white/5 px-1.5 py-0.5 rounded">
+                  <div key={idx} className={`flex items-center gap-1.5 ${isHome ? 'justify-start' : 'justify-end'}`}>
+                    <span className="text-[10px] text-slate-400 font-mono bg-white/5 px-1 py-0.2 rounded">
                       {timeStr}
                     </span>
                     <span>⚽</span>
-                    <span className="font-semibold text-slate-200">
+                    <span className="font-semibold text-slate-200 truncate max-w-[160px]">
                       {name}
-                    </span>
-                    <span className="text-[10px] text-slate-400">
-                      ({isHome ? hName : aName})
                     </span>
                   </div>
                 );
               })}
             </div>
           ) : (
-            <div className="text-center py-1 text-xs text-slate-400">
+            <div className="text-center py-0.5 text-slate-400 text-[10px]">
               No se registraron goles
             </div>
           )}
