@@ -552,53 +552,219 @@ export default function MatchDetail({ matchId }: MatchDetailProps) {
       {/* 2. RESUMEN / INCIDENCIAS */}
       {activeTab === 'resumen' && (
         <div className="space-y-4 animate-in fade-in-50 duration-200">
-          <h3 className="text-sm font-bold text-white flex items-center gap-2">
-            <Activity className="w-4 h-4 text-sky-400" />
-            Línea de Tiempo del Partido
-          </h3>
+          <div className="flex items-center justify-between">
+            <h3 className="text-sm font-bold text-white flex items-center gap-2">
+              <Activity className="w-4 h-4 text-sky-400" />
+              Línea de Tiempo del Partido
+            </h3>
+            <span className="text-[11px] font-semibold text-slate-400">
+              {incidents.length} {incidents.length === 1 ? 'evento' : 'eventos'}
+            </span>
+          </div>
 
           {incidents && incidents.length > 0 ? (
-            <div className="relative border-l-2 border-white/10 ml-4 pl-6 space-y-3.5 py-2">
-              {incidents.map((inc, idx) => {
-                const isHome = inc.isHome === true;
-                const time = inc.addedTime ? `${inc.time}+${inc.addedTime}'` : `${inc.time}'`;
-                const type = inc.incidentType;
-                let icon = '⚡';
-                let label = inc.text || type;
+            <div className="bg-[#101726]/60 rounded-2xl border border-white/5 overflow-hidden">
+              
+              {/* Header con equipos a cada lado */}
+              <div className="grid grid-cols-[1fr_auto_1fr] items-center px-4 py-3 border-b border-white/5 bg-white/[0.02]">
+                <div className="flex items-center justify-end gap-2 min-w-0 pr-2">
+                  <span className="text-xs font-bold text-white truncate text-right">{hName}</span>
+                  <TeamLogo logoUrl={hLogo} teamName={hName} className="w-5 h-5 shrink-0" />
+                </div>
 
-                if (type === 'goal') {
-                  icon = '⚽';
-                  label = `Gol: ${inc.playerName || inc.player?.name || 'Anotación'}`;
-                } else if (type === 'card') {
-                  if (inc.incidentClass === 'red') {
-                    icon = '🟥';
-                    label = `Tarjeta Roja: ${inc.playerName || inc.player?.name}`;
-                  } else {
-                    icon = '🟨';
-                    label = `Tarjeta Amarilla: ${inc.playerName || inc.player?.name}`;
-                  }
-                } else if (type === 'substitution') {
-                  icon = '🔄';
-                  label = `Cambio: Entra ${inc.playerIn?.name || ''} por ${inc.playerOut?.name || ''}`;
-                } else if (type === 'period') {
-                  icon = '⏱️';
-                  label = inc.text || 'Cambio de tiempo';
-                }
+                <div className="px-3 py-1 rounded-full bg-white/5 border border-white/10 text-[10px] font-black uppercase tracking-wider text-slate-400 shrink-0">
+                  MIN
+                </div>
 
-                return (
-                  <div key={idx} className="relative flex items-center gap-3">
-                    <div className="absolute -left-[31px] w-3.5 h-3.5 rounded-full bg-[#0B0F17] border-2 border-sky-400 flex items-center justify-center text-[8px]" />
-                    <span className="font-mono text-xs font-bold text-sky-400 min-w-[35px]">
-                      {time}
-                    </span>
-                    <span className="text-base">{icon}</span>
-                    <div className="flex-1 text-xs">
-                      <span className="font-semibold text-slate-200">{label}</span>
-                      <span className="text-slate-500 ml-2">({isHome ? hName : aName})</span>
-                    </div>
-                  </div>
-                );
-              })}
+                <div className="flex items-center justify-start gap-2 min-w-0 pl-2">
+                  <TeamLogo logoUrl={aLogo} teamName={aName} className="w-5 h-5 shrink-0" />
+                  <span className="text-xs font-bold text-white truncate text-left">{aName}</span>
+                </div>
+              </div>
+
+              {/* Timeline con eje central */}
+              <div className="relative py-4 px-2 sm:px-4">
+                {/* Línea central vertical */}
+                <div className="absolute left-1/2 top-2 bottom-2 -translate-x-1/2 w-px bg-white/10 pointer-events-none" />
+
+                <div className="space-y-3 relative z-10">
+                  {incidents.map((inc, idx) => {
+                    const type = inc.incidentType;
+                    const isHome = inc.isHome === true;
+                    const isAway = inc.isHome === false;
+                    const timeStr = inc.addedTime ? `${inc.time}+${inc.addedTime}'` : inc.time ? `${inc.time}'` : '';
+
+                    // Eventos de período o tiempo añadido (centrados)
+                    if (type === 'period') {
+                      let pText = inc.text || '';
+                      const lower = pText.toLowerCase();
+                      if (lower.includes('1t') || lower.includes('1st') || lower.includes('inicio')) pText = 'Inicio del Partido';
+                      else if (lower.includes('ht') || lower.includes('halftime') || lower.includes('entretiempo')) pText = 'Entretiempo';
+                      else if (lower.includes('2t') || lower.includes('2nd')) pText = 'Segundo Tiempo';
+                      else if (lower.includes('ft') || lower.includes('fulltime') || lower.includes('final')) pText = 'Final del Partido';
+                      else if (lower.includes('et') || lower.includes('extratime')) pText = 'Tiempo Suplementario';
+                      else if (lower.includes('pen')) pText = 'Penales';
+
+                      const hasScore = inc.homeScore !== undefined && inc.awayScore !== undefined;
+                      const scoreText = hasScore ? `(${inc.homeScore} - ${inc.awayScore})` : '';
+
+                      return (
+                        <div key={idx} className="flex items-center justify-center my-3 relative">
+                          <span className="px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-wider bg-[#0B0F17] border border-white/15 text-slate-300 shadow-md flex items-center gap-1.5 z-10">
+                            <span>⏱️</span>
+                            <span>{pText || 'Período'}</span>
+                            {scoreText && <span className="font-mono text-sky-400 font-black">{scoreText}</span>}
+                          </span>
+                        </div>
+                      );
+                    }
+
+                    if (type === 'injuryTime') {
+                      return (
+                        <div key={idx} className="flex items-center justify-center my-2 relative">
+                          <span className="px-2.5 py-0.5 rounded-full text-[9px] font-bold bg-[#0B0F17] border border-white/10 text-slate-400 z-10">
+                            ⏱ +{inc.length || inc.time}' tiempo añadido
+                          </span>
+                        </div>
+                      );
+                    }
+
+                    // Determinar icono, colores y textos según tipo de incidencia
+                    let icon = '⚡';
+                    let colorClass = 'text-slate-300 bg-slate-700/50';
+                    let borderClass = 'border-slate-600/50';
+                    let title = '';
+                    let detail = '';
+
+                    const playerName = inc.playerName || inc.player?.shortName || inc.player?.name || '';
+
+                    if (type === 'goal') {
+                      icon = '⚽';
+                      colorClass = 'text-emerald-300 bg-emerald-500/15';
+                      borderClass = 'border-emerald-500/30';
+                      if (inc.incidentClass === 'ownGoal') {
+                        title = `Autogol - ${playerName}`;
+                      } else if (inc.incidentClass === 'penalty') {
+                        title = `Gol (Penal) - ${playerName}`;
+                      } else {
+                        title = `Gol - ${playerName}`;
+                      }
+
+                      const assistName = inc.assist1?.shortName || inc.assist1?.name || inc.assist1Name;
+                      if (assistName) {
+                        detail = `Asist: ${assistName}`;
+                      }
+                      if (inc.homeScore !== undefined && inc.awayScore !== undefined) {
+                        const curScore = `(${inc.homeScore} - ${inc.awayScore})`;
+                        detail = detail ? `${detail} • ${curScore}` : curScore;
+                      }
+                    } else if (type === 'card') {
+                      if (inc.incidentClass === 'red' || inc.incidentClass === 'yellowRed') {
+                        icon = '🟥';
+                        colorClass = 'text-rose-300 bg-rose-500/15';
+                        borderClass = 'border-rose-500/30';
+                        title = inc.incidentClass === 'yellowRed' ? `Doble Amarilla - ${playerName}` : `Tarjeta Roja - ${playerName}`;
+                      } else {
+                        icon = '🟨';
+                        colorClass = 'text-amber-300 bg-amber-500/15';
+                        borderClass = 'border-amber-500/30';
+                        title = `Tarjeta Amarilla - ${playerName}`;
+                      }
+                      if (inc.reason) detail = inc.reason;
+                    } else if (type === 'substitution') {
+                      icon = '🔄';
+                      colorClass = 'text-blue-300 bg-blue-500/15';
+                      borderClass = 'border-blue-500/30';
+                      const pIn = inc.playerIn?.shortName || inc.playerIn?.name || inc.playerInName || '';
+                      const pOut = inc.playerOut?.shortName || inc.playerOut?.name || inc.playerOutName || '';
+                      title = pIn ? `Entra: ${pIn}` : 'Cambio';
+                      detail = pOut ? `Sale: ${pOut}` : '';
+                    } else if (type === 'woodwork') {
+                      icon = '🪵';
+                      colorClass = 'text-orange-300 bg-orange-500/15';
+                      borderClass = 'border-orange-500/30';
+                      title = `Tiro al palo - ${playerName}`;
+                    } else if (type === 'varDecision') {
+                      icon = '📺';
+                      colorClass = 'text-purple-300 bg-purple-500/15';
+                      borderClass = 'border-purple-500/30';
+                      title = 'Revisión VAR';
+                      detail = inc.incidentClass === 'goalDisallowed' ? `Gol anulado - ${playerName}` : inc.text || '';
+                    } else {
+                      title = inc.text || type || 'Incidencia';
+                      detail = playerName;
+                    }
+
+                    return (
+                      <div
+                        key={idx}
+                        className="grid grid-cols-[1fr_52px_1fr] items-center py-1.5 px-1 sm:px-2 rounded-xl hover:bg-white/[0.03] transition-colors"
+                      >
+                        {/* COLUMNA IZQUIERDA (Local) */}
+                        {isHome ? (
+                          <div className="flex items-center justify-end gap-2 min-w-0 pr-2">
+                            <div className="flex flex-col items-end text-right min-w-0">
+                              <span className="text-xs font-bold text-slate-200 leading-snug truncate max-w-[110px] xs:max-w-[150px] sm:max-w-[220px] md:max-w-[280px]">
+                                {title}
+                              </span>
+                              {detail && (
+                                <span className="text-[10px] text-slate-400 leading-tight truncate max-w-[110px] xs:max-w-[150px] sm:max-w-[220px] md:max-w-[280px]">
+                                  {detail}
+                                </span>
+                              )}
+                            </div>
+                            <div
+                              className={`w-7 h-7 rounded-full border ${borderClass} ${colorClass} flex items-center justify-center text-xs shrink-0 shadow-sm`}
+                            >
+                              {icon}
+                            </div>
+                          </div>
+                        ) : (
+                          <div />
+                        )}
+
+                        {/* CENTRO (Minuto en el eje) */}
+                        <div className="flex items-center justify-center">
+                          <span
+                            className={`px-2 py-0.5 rounded-full text-[10px] font-mono font-bold bg-[#0B0F17] border shadow-sm z-10 whitespace-nowrap ${
+                              isHome
+                                ? 'border-sky-500/40 text-sky-400'
+                                : isAway
+                                ? 'border-purple-500/40 text-purple-400'
+                                : 'border-white/20 text-slate-300'
+                            }`}
+                          >
+                            {timeStr || '•'}
+                          </span>
+                        </div>
+
+                        {/* COLUMNA DERECHA (Visitante) */}
+                        {isAway ? (
+                          <div className="flex items-center justify-start gap-2 min-w-0 pl-2">
+                            <div
+                              className={`w-7 h-7 rounded-full border ${borderClass} ${colorClass} flex items-center justify-center text-xs shrink-0 shadow-sm`}
+                            >
+                              {icon}
+                            </div>
+                            <div className="flex flex-col items-start text-left min-w-0">
+                              <span className="text-xs font-bold text-slate-200 leading-snug truncate max-w-[110px] xs:max-w-[150px] sm:max-w-[220px] md:max-w-[280px]">
+                                {title}
+                              </span>
+                              {detail && (
+                                <span className="text-[10px] text-slate-400 leading-tight truncate max-w-[110px] xs:max-w-[150px] sm:max-w-[220px] md:max-w-[280px]">
+                                  {detail}
+                                </span>
+                              )}
+                            </div>
+                          </div>
+                        ) : (
+                          <div />
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
             </div>
           ) : (
             <div className="p-6 rounded-2xl bg-[#101726]/40 border border-white/5 text-center text-slate-400 text-xs">
