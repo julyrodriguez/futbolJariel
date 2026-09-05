@@ -11,7 +11,6 @@ import {
   getTeamName, 
   getTeamLogo 
 } from '../lib/footballUtils';
-import { ChevronDown } from 'lucide-react';
 
 interface MatchRowProps {
   match: Match;
@@ -33,26 +32,6 @@ export default function MatchRow({ match }: MatchRowProps) {
   const aScore = getScore(match, 'away');
   const liveTime = status.isLive ? getMatchTime(match) : null;
 
-  const loadGoals = (e: React.MouseEvent) => {
-    e.stopPropagation();
-    if (!status.hasStarted) return;
-    if (goals !== null) {
-      setGoalsOpen(!goalsOpen);
-      return;
-    }
-    setGoalsLoading(true);
-    setGoalsOpen(true);
-    fetch(`https://apivacas.jariel.com.ar/api/matches/detail/${matchId}`)
-      .then(res => res.json())
-      .then(d => {
-        const incidents = d.incidents || (d.events?.[0]?.incidents) || [];
-        const goalInc = incidents.filter((i: any) => i.incidentType === 'goal');
-        setGoals(goalInc);
-      })
-      .catch(() => setGoals([]))
-      .finally(() => setGoalsLoading(false));
-  };
-
   const startTimeStr = match.startTimestamp
     ? new Date(match.startTimestamp * 1000).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
     : '';
@@ -63,12 +42,12 @@ export default function MatchRow({ match }: MatchRowProps) {
         onClick={() => {
           if (matchId) router.push(`/match/${matchId}`);
         }}
-        className={`group grid grid-cols-[65px_1fr_auto_1fr] sm:grid-cols-[75px_1fr_60px_1fr] items-center px-2.5 sm:px-4 py-2 hover:bg-white/[0.04] transition-colors cursor-pointer select-none ${
+        className={`group grid grid-cols-[60px_1fr_auto_1fr] sm:grid-cols-[70px_1fr_auto_1fr] items-center px-2.5 sm:px-4 py-2 hover:bg-white/[0.04] transition-colors cursor-pointer select-none ${
           status.isLive ? 'bg-red-500/[0.03]' : ''
         }`}
       >
         {/* Col 1: Time / Status */}
-        <div className="flex flex-col items-center justify-center pr-2 border-r border-white/5">
+        <div className="flex flex-col items-center justify-center pr-2 border-r border-white/5 shrink-0 whitespace-nowrap">
           {status.isLive ? (
             <span className="text-[10px] font-black text-red-400 animate-pulse leading-none flex items-center gap-1">
               <span className="w-1.5 h-1.5 rounded-full bg-red-500" />
@@ -86,72 +65,40 @@ export default function MatchRow({ match }: MatchRowProps) {
         </div>
 
         {/* Col 2: Home Team (Name + Logo) */}
-        <div className="flex items-center justify-end gap-2 px-2 text-right min-w-0">
-          <span className="text-xs sm:text-[13px] font-bold text-slate-100 group-hover:text-sky-300 transition-colors truncate max-w-[120px] sm:max-w-[180px]">
+        <div className="flex items-center justify-end gap-1.5 sm:gap-2 px-1.5 sm:px-2 text-right min-w-0">
+          <span className="text-xs sm:text-[13px] font-bold text-slate-100 group-hover:text-sky-300 transition-colors truncate">
             {hName}
           </span>
           <TeamLogo logoUrl={hLogo} teamName={hName} className="w-5 h-5 sm:w-6 sm:h-6 shrink-0" />
         </div>
 
-        {/* Col 3: Scoreboard Box */}
-        <div className="flex items-center justify-center px-1.5 sm:px-2 shrink-0">
+        {/* Col 3: Scoreboard Box (Always single line, no wrap) */}
+        <div className="flex items-center justify-center px-1 sm:px-2 shrink-0">
           {status.hasStarted ? (
-            <div className={`px-2 py-0.5 rounded font-mono font-black text-xs sm:text-sm tracking-tight border ${
+            <div className={`px-2.5 py-0.5 rounded font-mono font-black text-xs sm:text-sm tracking-tight border whitespace-nowrap inline-flex items-center justify-center gap-1 min-w-[54px] ${
               status.isLive 
                 ? 'bg-red-500/15 border-red-500/30 text-red-400 shadow-[0_0_8px_rgba(239,68,68,0.2)]'
                 : 'bg-black/40 border-white/10 text-white'
             }`}>
-              {hScore ?? 0} - {aScore ?? 0}
+              <span>{hScore ?? 0}</span>
+              <span className="text-slate-500 font-normal select-none">-</span>
+              <span>{aScore ?? 0}</span>
             </div>
           ) : (
-            <div className="px-2 py-0.5 rounded bg-white/5 border border-white/5 font-mono text-[11px] text-slate-500">
+            <div className="px-2 py-0.5 rounded bg-white/5 border border-white/5 font-mono text-[11px] text-slate-500 whitespace-nowrap inline-flex items-center justify-center min-w-[36px]">
               -
             </div>
           )}
         </div>
 
         {/* Col 4: Away Team (Logo + Name) */}
-        <div className="flex items-center justify-start gap-2 px-2 text-left min-w-0">
+        <div className="flex items-center justify-start gap-1.5 sm:gap-2 px-1.5 sm:px-2 text-left min-w-0">
           <TeamLogo logoUrl={aLogo} teamName={aName} className="w-5 h-5 sm:w-6 sm:h-6 shrink-0" />
-          <span className="text-xs sm:text-[13px] font-bold text-slate-100 group-hover:text-sky-300 transition-colors truncate max-w-[120px] sm:max-w-[180px]">
+          <span className="text-xs sm:text-[13px] font-bold text-slate-100 group-hover:text-sky-300 transition-colors truncate">
             {aName}
           </span>
         </div>
       </div>
-
-      {/* Optional Quick Goals Drawer */}
-      {goalsOpen && (
-        <div className="px-4 py-2 bg-[#080d16] border-t border-white/5 text-[11px] animate-in fade-in-0 duration-150">
-          {goalsLoading ? (
-            <div className="flex items-center justify-center py-1 text-slate-400 gap-1.5">
-              <div className="animate-spin w-3 h-3 border-2 border-sky-400 border-t-transparent rounded-full" />
-              <span>Cargando goles...</span>
-            </div>
-          ) : goals && goals.length > 0 ? (
-            <div className="space-y-1">
-              {goals.map((g, idx) => {
-                const isHome = g.isHome === true;
-                const name = g.playerName || g.player?.shortName || g.player?.name || 'Gol';
-                const timeStr = g.addedTime ? `${g.time}+${g.addedTime}'` : `${g.time}'`;
-
-                return (
-                  <div key={idx} className={`flex items-center gap-2 ${isHome ? 'justify-start' : 'justify-end'}`}>
-                    <span className="text-[10px] text-slate-400 font-mono bg-white/5 px-1 py-0.2 rounded">
-                      {timeStr}
-                    </span>
-                    <span>⚽</span>
-                    <span className="font-semibold text-slate-200 truncate max-w-[160px]">{name}</span>
-                  </div>
-                );
-              })}
-            </div>
-          ) : (
-            <div className="text-center py-0.5 text-slate-500 text-[10px]">
-              No se registraron goles
-            </div>
-          )}
-        </div>
-      )}
     </div>
   );
 }

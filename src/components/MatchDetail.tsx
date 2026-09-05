@@ -523,7 +523,7 @@ export default function MatchDetail({ matchId }: MatchDetailProps) {
                           <TeamLogo logoUrl={mHLogo} teamName={mHName} className="w-5 h-5 shrink-0" />
                         </div>
 
-                        <div className="px-2 py-0.5 rounded-lg bg-black/40 border border-white/10 text-xs font-black text-white shrink-0">
+                        <div className="px-2.5 py-0.5 rounded-lg bg-black/40 border border-white/10 text-xs font-black text-white shrink-0 whitespace-nowrap inline-flex items-center justify-center gap-1">
                           {mHScore ?? 0} - {mAScore ?? 0}
                         </div>
 

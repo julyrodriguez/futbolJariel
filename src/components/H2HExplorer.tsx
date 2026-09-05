@@ -270,7 +270,7 @@ export default function H2HExplorer() {
                       <TeamLogo logoUrl={hLogo} teamName={hName} className="w-6 h-6 shrink-0" />
                     </div>
 
-                    <div className="px-3 py-1 rounded-xl bg-black/50 border border-white/10 text-xs sm:text-sm font-black text-white shrink-0">
+                    <div className="px-3 py-1 rounded-xl bg-black/50 border border-white/10 text-xs sm:text-sm font-black text-white shrink-0 whitespace-nowrap inline-flex items-center justify-center gap-1">
                       {hScore ?? 0} - {aScore ?? 0}
                     </div>
 
