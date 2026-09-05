@@ -2,9 +2,9 @@
 
 import { useState, useEffect, useMemo, useCallback } from 'react';
 import Link from 'next/link';
-import LeagueBar from './LeagueBar';
 import DatePickerStrip from './DatePickerStrip';
-import MatchCard from './MatchCard';
+import TournamentCard from './TournamentCard';
+import MatchRow from './MatchRow';
 import { 
   Match, 
   parseMatchStatus, 
@@ -125,13 +125,14 @@ export default function MatchesHub({ leagueId = 'general' }: MatchesHubProps) {
   // Group by Tournament (for General View)
   const groupedByTournament = useMemo(() => {
     if (!isGeneral) return null;
-    const map = new Map<string, { name: string; flag?: string; matches: Match[] }>();
+    const map = new Map<string, { name: string; flag?: string; tournamentId?: number; matches: Match[] }>();
 
     currentList.forEach(m => {
       const tName = m.tournament_name || m.tournament?.name || 'Varios';
       const flag = m.tournament?.category?.flag;
+      const tId = m.tournament?.id || (m as any).tournament_id;
       if (!map.has(tName)) {
-        map.set(tName, { name: tName, flag, matches: [] });
+        map.set(tName, { name: tName, flag, tournamentId: tId, matches: [] });
       }
       map.get(tName)!.matches.push(m);
     });
@@ -142,12 +143,9 @@ export default function MatchesHub({ leagueId = 'general' }: MatchesHubProps) {
   return (
     <div className="space-y-4 pb-16">
       
-      {/* 1. Quick League Carousel Bar */}
-      <LeagueBar currentLeagueId={leagueId} basePath="partidos" />
-
-      {/* 2. League Subheader & Tab Switcher (if on a specific league) */}
+      {/* 1. League Subheader & Tab Switcher (if on a specific league) */}
       {!isGeneral && (
-        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 bg-[#101726]/60 px-4 py-3 rounded-2xl border border-white/5">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 bg-[#101726]/80 px-4 py-3 rounded-2xl border border-white/[0.08]">
           <div className="flex items-center gap-2.5">
             <span className="text-2xl">{activeLeague.icon}</span>
             <div>
@@ -155,7 +153,7 @@ export default function MatchesHub({ leagueId = 'general' }: MatchesHubProps) {
                 {activeLeague.name}
               </h1>
               <p className="text-[11px] text-slate-400">
-                Resultados y fixture oficial
+                Fixture y resultados oficiales
               </p>
             </div>
           </div>
@@ -170,7 +168,7 @@ export default function MatchesHub({ leagueId = 'general' }: MatchesHubProps) {
         </div>
       )}
 
-      {/* 3. Controls / Date / Round Picker */}
+      {/* 2. Controls / Date / Round Picker */}
       {isGeneral ? (
         <DatePickerStrip
           selectedDate={selectedDate}
@@ -180,7 +178,7 @@ export default function MatchesHub({ leagueId = 'general' }: MatchesHubProps) {
           liveCount={liveCount}
         />
       ) : (
-        <div className="flex flex-wrap items-center justify-between gap-2.5 bg-[#101726]/60 px-3.5 py-2.5 rounded-2xl border border-white/5">
+        <div className="flex flex-wrap items-center justify-between gap-2.5 bg-[#101726]/60 px-3.5 py-2.5 rounded-2xl border border-white/[0.08]">
           
           {/* Round Selector Dropdown */}
           <div className="flex items-center gap-2">
@@ -218,7 +216,7 @@ export default function MatchesHub({ leagueId = 'general' }: MatchesHubProps) {
         </div>
       )}
 
-      {/* 4. Match List or Loading States */}
+      {/* 3. Match List or Loading States (Elnine format: Tournament Containers with compact rows) */}
       {loading && currentList.length === 0 ? (
         <div className="py-16 flex flex-col items-center justify-center gap-2.5">
           <div className="w-8 h-8 border-2 border-sky-400 border-t-transparent rounded-full animate-spin" />
@@ -257,30 +255,26 @@ export default function MatchesHub({ leagueId = 'general' }: MatchesHubProps) {
           )}
         </div>
       ) : isGeneral && groupedByTournament ? (
-        /* Grouped by tournament for General View - Compact Cards Grid */
-        <div className="space-y-5">
+        /* General View: Grouped into Tournament Cards */
+        <div className="space-y-3">
           {groupedByTournament.map((group, gIdx) => (
-            <div key={gIdx} className="space-y-2">
-              <div className="flex items-center gap-2 px-1 text-xs font-bold text-slate-300">
-                <Trophy className="w-3.5 h-3.5 text-amber-400" />
-                <span className="text-white text-xs sm:text-sm font-black">{group.name}</span>
-                <span className="text-slate-500 text-[10px] font-semibold">({group.matches.length})</span>
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2.5">
-                {group.matches.map((m) => (
-                  <MatchCard key={m.id || (m as any)._id} match={m} />
-                ))}
-              </div>
-            </div>
+            <TournamentCard
+              key={gIdx}
+              tournamentName={group.name}
+              flag={group.flag}
+              tournamentId={group.tournamentId}
+              matches={group.matches}
+            />
           ))}
         </div>
       ) : (
-        /* Flat Grid for Specific League / Round - Compact Cards Grid */
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2.5">
-          {currentList.map((m) => (
-            <MatchCard key={m.id || (m as any)._id} match={m} />
-          ))}
+        /* Specific League: Container Card for current round */
+        <div className="space-y-3">
+          <TournamentCard
+            tournamentName={activeLeague.name}
+            tournamentId={activeLeague.tournamentId || undefined}
+            matches={currentList}
+          />
         </div>
       )}
 
